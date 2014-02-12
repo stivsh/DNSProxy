@@ -12,12 +12,19 @@ TEMPLATE = app
 
 SOURCES += main.cpp \
     servercore.cpp \
-    eventhandler.cpp \
-    messidentconteiner.cpp \
-    logger.cpp
+    event_handlers/messidentconteiner.cpp \
+    event_handlers/ClientHandler.cpp \
+    event_handlers/HandlerFactory.cpp \
+    event_handlers/NewConnectionHandler.cpp \
+    event_handlers/UDPServerHandler.cpp \
+    event_handlers/eventhandler.cpp
 
 HEADERS += \
     servercore.h \
-    eventhandler.h \
-    messidentconteiner.h \
-    logger.h
+    event_handlers/eventhandler.h \
+    event_handlers/messidentconteiner.h \
+    logger.h \
+    event_handlers/NewConnectionHandler.h \
+    event_handlers/UDPServerHandler.h \
+    event_handlers/ClientHandler.h \
+    event_handlers/HandlerFactory.h

@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
+#include <vector>
 #include <map>
 #include <limits>
 #include <fcntl.h>
@@ -13,6 +15,8 @@ class UDPClientData{
     unsigned short mess_id;
     struct sockaddr from;
     socklen_t fromlen;
+    time_t time_stamp;
+    UDPClientData(){time(&time_stamp);}
 };
 std::map<unsigned short,UDPClientData> indent_to_old;
 int const buff_max=2048;
@@ -26,8 +30,6 @@ fd_set exceptset;
 
 int serv_sock;
 int udp_listener;
-
-bool ready_write;
 void reg_udp_sock(){
     struct sockaddr_in uaddr;
     uaddr.sin_family = AF_INET;
@@ -68,10 +70,13 @@ void reg_tcp_sock(){
         perror("socket");
         exit(1);
     }
-    fcntl(serv_sock, F_SETFL, O_NONBLOCK);
     if(connect(serv_sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
     {
         perror("connect");
+        exit(2);
+    }
+    if(fcntl(serv_sock, F_SETFL, O_NONBLOCK)==-1){
+        perror("fcntl error. nonblock");
         exit(2);
     }
 }
@@ -82,7 +87,7 @@ void zero_sets(){
 }
 void fill_sets(){
     FD_SET(serv_sock, &readset);
-    FD_SET(serv_sock, &writeset);
+    if(opos)FD_SET(serv_sock, &writeset);
     FD_SET(serv_sock, &exceptset);
     FD_SET(udp_listener, &readset);
     FD_SET(udp_listener, &exceptset);
@@ -97,8 +102,8 @@ void udp_error(){
     exit(5);
 }
 void try_to_send_response(){
-    if(inpos>sizeof(short))return;
-    unsigned short len=*reinterpret_cast<unsigned short*>(inbuff);
+    if(inpos<=sizeof(short))return;
+    unsigned short len=ntohs(*reinterpret_cast<unsigned short*>(inbuff));
     if(len>(inpos-sizeof(short)))return;
     unsigned short new_id=ntohs(*reinterpret_cast<unsigned short*>(inbuff+sizeof(short)));
     if(!indent_to_old.count(new_id))return;
@@ -109,10 +114,10 @@ void try_to_send_response(){
     inpos-=sizeof(short)+len;
 }
 void tct_ready_read(){
-    int bytesr=recv(serv_sock,inbuff,buff_max-inpos,0);
+    int bytesr=recv(serv_sock,inbuff+inpos,buff_max-inpos,0);
     if(bytesr==0){
         perror("server drop connection");
-        exit(8);
+        reg_tcp_sock();
     }else if(bytesr<0){
         perror("tcp reading error");
         exit(9);
@@ -123,20 +128,18 @@ void tct_ready_read(){
 
 }
 void try_to_write_tcp(){
-    if(!ready_write||opos>sizeof(short))return;
+    if(opos<=sizeof(short))return;
     int bytesw=send(serv_sock,obuff,opos,0);
     if(bytesw==0){
-        ready_write=false;
     }else if(bytesw<0){
         perror("TCP write error");
         exit(7);
     }else if(bytesw>0){
-        memmove(obuff+bytesw,obuff,opos-bytesw);
+        memmove(obuff,obuff+bytesw,opos-bytesw);
         opos-=bytesw;
     }
 }
 void tcp_ready_write(){
-    ready_write=true;
     try_to_write_tcp();
 }
 void udp_ready_read(){
@@ -151,6 +154,10 @@ void udp_ready_read(){
         //обработка
         cl_data.mess_id=ntohs(*reinterpret_cast<unsigned short*>(tm_buff));
         unsigned short new_id=get_new_ident(cl_data.mess_id);
+        if(new_id==0){
+            delete [] tm_buff;
+            return;
+        }
         indent_to_old[new_id]=cl_data;
         *reinterpret_cast<unsigned short*>(tm_buff)=htons(new_id);
         unsigned short nbytesc=htons(bytesc);
@@ -169,11 +176,26 @@ void evalute_handlers(){
     if(FD_ISSET(serv_sock, &exceptset))tcp_error();
     if(FD_ISSET(udp_listener, &exceptset))udp_error();
 }
+time_t last_check;
+void check_time_stamps(){
+    time_t now;
+    time(&now);
+    if(difftime(now,last_check)<12)return;
+    std::vector<unsigned short> ids_to_delete;
+    for(std::map<unsigned short,UDPClientData>::iterator it=indent_to_old.begin();it!=indent_to_old.end();++it){
+        if(difftime(now,it->second.time_stamp)>10)
+            ids_to_delete.push_back(it->first);
+    }
+    for(std::vector<unsigned short>::iterator it=ids_to_delete.begin();it!=ids_to_delete.end();++it){
+        indent_to_old.erase(*it);
+    }
+    time(&last_check);
+}
 
 int main(int argc, char *argv[]){
     (void)argc;
     (void)argv;
-    ready_write=false;
+    time(&last_check);
     inbuff=new char[buff_max];inpos=0;
     obuff=new char[buff_max];opos=0;
     //сокет сервера
@@ -186,11 +208,15 @@ int main(int argc, char *argv[]){
         timeout.tv_usec = 0;
         zero_sets();
         fill_sets();
-        if(select(((serv_sock>udp_listener)?serv_sock:udp_listener)+1,&readset,&writeset,&exceptset,&timeout)<=0){
+        int select_ret=select(((serv_sock>udp_listener)?serv_sock:udp_listener)+1,&readset,&writeset,&exceptset,&timeout);
+        if(select_ret<0){
             perror("select");
             exit(3);
+        }else if(select_ret>0){
+            evalute_handlers();
         }
-        evalute_handlers();
+        check_time_stamps();
+
     }
 
     delete [] inbuff;

@@ -5,17 +5,27 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include <cstdlib>
+#include <ctime>
 #include <unistd.h>
 #include <map>
 #include <set>
 #include <cstdlib>
 #include <limits>
-#include "eventhandler.h"
+#include "event_handlers/eventhandler.h"
+#include "event_handlers/HandlerFactory.h"
+/**
+ * @brief The ServerCore class
+ *
+ */
 class ServerCore{
+    /**
+     * @brief server
+     */
     static ServerCore* server;
     volatile bool start;
     volatile bool restart;
     HandlerFactory hfact;
+    time_t last_time_check;
     std::set<EventHandler*> handlers_to_delete;
     void start_loop();
  public:

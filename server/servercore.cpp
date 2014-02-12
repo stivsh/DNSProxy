@@ -22,9 +22,7 @@ int fill_fd_sets(fd_set *readset,fd_set *writeset,fd_set *exceptset,std::set<Eve
     int maxfd=0;
     for(std::set<EventHandler*>::iterator it=hset.begin();
                 it!=hset.end();++it){
-        FD_SET((*it)->get_handler(), readset);
-        FD_SET((*it)->get_handler(), writeset);
-        FD_SET((*it)->get_handler(), exceptset);
+        (*it)->fill_fd_sets(readset,writeset,exceptset);
         if((*it)->get_handler()>maxfd)maxfd=(*it)->get_handler();
     }
     return maxfd;
@@ -40,7 +38,6 @@ void evalute_events(fd_set *readset,fd_set *writeset,fd_set *exceptset,std::map<
             if(FD_ISSET(it->first, exceptset))it->second->exeption();
             if(FD_ISSET(it->first, readset))it->second->ready_read();
             if(FD_ISSET(it->first, writeset))it->second->ready_write();
-            it->second->time_out();
         }
 }
 void deferred_handlers_delete(std::set<EventHandler*> &handlers_to_delete,HandlerFactory &hfact){
@@ -52,6 +49,7 @@ void deferred_handlers_delete(std::set<EventHandler*> &handlers_to_delete,Handle
 }
 
 void ServerCore::start_loop(){
+    time(&last_time_check);
     while(!restart){
         fd_set readset;
         fd_set writeset;
@@ -63,8 +61,6 @@ void ServerCore::start_loop(){
 
         int select_ret=select(maxfd+1,&readset,&writeset,&exceptset,&timeout);
         if(select_ret==0){
-            evalute_time_out_events(hfact.get_handlers_set());
-
         }
         if(select_ret>0){
             evalute_events(&readset,&writeset,&exceptset,hfact.get_handler_map());
@@ -72,6 +68,10 @@ void ServerCore::start_loop(){
         if(select_ret<0){
             Logger::Instance().critical("polling error");
             ServerCore::CriticalError();
+        }
+        if(difftime(time(0),last_time_check)>10){//TODO мин из параметров
+            evalute_time_out_events(hfact.get_handlers_set());
+            time(&last_time_check);
         }
         deferred_handlers_delete(handlers_to_delete,hfact);
     }
