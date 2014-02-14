@@ -66,8 +66,10 @@ void ServerCore::start_loop(){
             evalute_events(&readset,&writeset,&exceptset,hfact.get_handler_map());
         }
         if(select_ret<0){
-            Logger::Instance().critical("polling error");
-            ServerCore::CriticalError();
+            if(!restart){
+                Logger::Instance().critical("polling error");
+                ServerCore::CriticalError();
+            }
         }
         if(difftime(time(0),last_time_check)>10){//TODO мин из параметров
             evalute_time_out_events(hfact.get_handlers_set());
@@ -79,9 +81,7 @@ void ServerCore::start_loop(){
 HandlerFactory& ServerCore::get_hfact(){
     return hfact;
 }
-int ServerCore::start_server(int argc, char *argv[]){
-    (void)argc;
-    (void)argv;
+int ServerCore::start_server(){
     Logger::Instance().message("Start server");
     ServerCore& server=Instance();
     server.start=true;
@@ -113,6 +113,6 @@ void ServerCore::CriticalError(){
     Logger::Instance().critical("Stoping vie critical error");
     ServerCore::Instance().hfact.revoke_all_handlers();
     ServerCore::DeleteServer();
-    exit(-1);
+    exit(1);
 
 }

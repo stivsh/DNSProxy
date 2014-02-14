@@ -10,6 +10,7 @@
 #include <map>
 #include <limits>
 #include <fcntl.h>
+//nslookup -port=3425 mail.ru 127.0.0.1
 class UDPClientData{
     public:
     unsigned short mess_id;

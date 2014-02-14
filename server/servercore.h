@@ -32,7 +32,7 @@ class ServerCore{
     enum COMMANDS{STOP=0,RESTART=1};
     void external_command(COMMANDS command);
     void delete_handler_next_itration(EventHandler* handler);
-    static int start_server(int argc, char *argv[]);
+    static int start_server();
     static void CriticalError();
     static void DeleteServer();
     HandlerFactory& get_hfact();
