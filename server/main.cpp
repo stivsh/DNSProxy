@@ -97,7 +97,7 @@ int main(int argc, char *argv[]){
     if(argc>1){
         for(int i=1;i!=argc;++i){
             char* par=argv[i];
-            if(strcmp("-c",par)){
+            if(strcmp("-c",par)==0){
                 deamon=false;
             }
         }
@@ -108,5 +108,5 @@ int main(int argc, char *argv[]){
         return start_server();
     }
 
-
+    return 0;
 }

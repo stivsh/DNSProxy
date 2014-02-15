@@ -21,8 +21,10 @@ class UDPClientData{
 };
 std::map<unsigned short,UDPClientData> indent_to_old;
 int const buff_max=2048;
+char _inbuff[buff_max];
 char *inbuff;
 unsigned short inpos;
+char _obuff[buff_max];
 char *obuff;
 unsigned short opos;
 fd_set readset;
@@ -103,14 +105,32 @@ void udp_error(){
     exit(5);
 }
 void try_to_send_response(){
-    if(inpos<=sizeof(short))return;
-    unsigned short len=ntohs(*reinterpret_cast<unsigned short*>(inbuff));
-    if(len>(inpos-sizeof(short)))return;
-    unsigned short new_id=ntohs(*reinterpret_cast<unsigned short*>(inbuff+sizeof(short)));
-    if(!indent_to_old.count(new_id))return;
+    if(inpos<=sizeof(short)){
+        perror("not enoth bytes in input buffer");
+        return;
+    }
+    unsigned short len;
+    memcpy(&len,inbuff,sizeof(short));
+    len=ntohs(len);
+    if(len>(inpos-sizeof(short))){
+        perror("len of message greater than inbuff size");
+        return;
+    }
+    unsigned short new_id;
+    memcpy(&new_id,inbuff+sizeof(short),sizeof(short));
+    new_id=ntohs(new_id);
+    if(!indent_to_old.count(new_id)){
+        perror("there is no id for message in map");
+        return;
+    }
     UDPClientData client_data=indent_to_old[new_id];
-    *reinterpret_cast<unsigned short*>(inbuff+sizeof(short))=htons(client_data.mess_id);
-    sendto(udp_listener,inbuff+sizeof(short),len,0,&client_data.from,client_data.fromlen);
+    indent_to_old.erase(new_id);
+    client_data.mess_id=htons(client_data.mess_id);
+    memcpy(inbuff+sizeof(short),&(client_data.mess_id),sizeof(short));
+    ssize_t bytes_writen=sendto(udp_listener,inbuff+sizeof(short),len,0,&client_data.from,client_data.fromlen);
+    if(bytes_writen<len){
+        printf("mess size:%d writen:%l",len,bytes_writen);
+    }
     memmove(inbuff,inbuff+sizeof(short)+len,inpos-(sizeof(short)+len));
     inpos-=sizeof(short)+len;
 }
@@ -123,6 +143,7 @@ void tct_ready_read(){
         perror("tcp reading error");
         exit(9);
     }else if(bytesr>0){
+        printf("new message");
         inpos+=bytesr;
         try_to_send_response();
     }
@@ -132,6 +153,7 @@ void try_to_write_tcp(){
     if(opos<=sizeof(short))return;
     int bytesw=send(serv_sock,obuff,opos,0);
     if(bytesw==0){
+        perror("0 bytes writen to server");
     }else if(bytesw<0){
         perror("TCP write error");
         exit(7);
@@ -145,30 +167,35 @@ void tcp_ready_write(){
 }
 void udp_ready_read(){
     UDPClientData cl_data;
-    char *tm_buff=new char[buff_max];
+    char _tm_buff[buff_max];
+    char *tm_buff=_tm_buff;
     int bytesc=recvfrom(udp_listener,tm_buff,buff_max,0,&cl_data.from,&cl_data.fromlen);
     if(bytesc==-1){
         perror("udp read error");
         exit(6);
     }else if(bytesc>(int)sizeof(short)){
-        if((int)(opos+sizeof(short)+bytesc)>buff_max)return;
-        //обработка
-        cl_data.mess_id=ntohs(*reinterpret_cast<unsigned short*>(tm_buff));
+        if((int)(opos+sizeof(short)+bytesc)>buff_max){
+            perror("input buffer overflow");
+            return;
+        }
+        memcpy(&(cl_data.mess_id),tm_buff,sizeof(short));
+        cl_data.mess_id=ntohs(cl_data.mess_id);
         unsigned short new_id=get_new_ident(cl_data.mess_id);
         if(new_id==0){
-            delete [] tm_buff;
+            perror("Can't create new id for message");
             return;
         }
         indent_to_old[new_id]=cl_data;
-        *reinterpret_cast<unsigned short*>(tm_buff)=htons(new_id);
+        unsigned short netnew_id=htons(new_id);
+        memcpy(tm_buff,&netnew_id,sizeof(short));
         unsigned short nbytesc=htons(bytesc);
         memcpy(obuff+opos,(char*)(&nbytesc),sizeof(short));
         opos+=sizeof(short);
         memcpy(obuff+opos,tm_buff,bytesc);
         opos+=bytesc;
+        printf("Get new query, id:%d",new_id);
         try_to_write_tcp();
     }
-    delete [] tm_buff;
 }
 void evalute_handlers(){
     if(FD_ISSET(serv_sock, &readset))tct_ready_read();
@@ -184,10 +211,12 @@ void check_time_stamps(){
     if(difftime(now,last_check)<12)return;
     std::vector<unsigned short> ids_to_delete;
     for(std::map<unsigned short,UDPClientData>::iterator it=indent_to_old.begin();it!=indent_to_old.end();++it){
-        if(difftime(now,it->second.time_stamp)>10)
+        if(difftime(now,it->second.time_stamp)>10){
             ids_to_delete.push_back(it->first);
+        }
     }
     for(std::vector<unsigned short>::iterator it=ids_to_delete.begin();it!=ids_to_delete.end();++it){
+        printf("delete id:%d, timeout",*it);
         indent_to_old.erase(*it);
     }
     time(&last_check);
@@ -196,9 +225,9 @@ void check_time_stamps(){
 int main(int argc, char *argv[]){
     (void)argc;
     (void)argv;
+    inbuff=_inbuff;
+    obuff=_obuff;
     time(&last_check);
-    inbuff=new char[buff_max];inpos=0;
-    obuff=new char[buff_max];opos=0;
     //сокет сервера
     reg_tcp_sock();
     //сокет сервера
@@ -219,8 +248,5 @@ int main(int argc, char *argv[]){
         check_time_stamps();
 
     }
-
-    delete [] inbuff;
-    delete [] obuff;
     return 0;
 }

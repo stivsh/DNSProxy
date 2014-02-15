@@ -29,3 +29,4 @@ HEADERS += \
     event_handlers/UDPServerHandler.h \
     event_handlers/ClientHandler.h \
     event_handlers/HandlerFactory.h
+DEFINES +=DEBUGSERV
