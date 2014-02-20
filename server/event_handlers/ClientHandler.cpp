@@ -1,5 +1,6 @@
 #include "ClientHandler.h"
 #include "../servercore.h"
+#include "../../common/OptionReader.h"
 ClientHandler::ClientHandler(int sd_,UDPServerHandler* _uservh,struct sockaddr addr_):
     uservh(_uservh),addr(addr_),inbuffer(inbuffer_arr),outbuffer(outbuffer_arr),inpos(0),outpos(0){
     sd=sd_;
@@ -91,7 +92,7 @@ void ClientHandler::exeption(){
 }
 void ClientHandler::time_out(){
     if(errorflag)return;
-    if(difftime(time(0),last_reply_to_client)>3000){//TODO настройки decrice
+    if(difftime(time(0),last_reply_to_client)>OptionReader::get_int_opt("client_no_reply_time")){
         Logger::Instance().client_message("Drop connection. no activity",&addr);
         drop_connection();
     }

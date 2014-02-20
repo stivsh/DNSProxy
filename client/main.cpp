@@ -65,7 +65,7 @@ unsigned short get_new_ident(unsigned short old){
 void reg_tcp_sock(){
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(8080); // или любой другой порт...
+    addr.sin_port = htons(8080); //TODO опт. или любой другой порт...
     addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     serv_sock = socket(AF_INET, SOCK_STREAM, 0);
     if(serv_sock < 0)

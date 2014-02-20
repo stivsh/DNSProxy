@@ -1,5 +1,6 @@
 #include "UDPServerHandler.h"
 #include "../servercore.h"
+#include "../../common/OptionReader.h"
 UDPServerHandler::UDPServerHandler(){
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if(sock<0){
@@ -10,7 +11,7 @@ UDPServerHandler::UDPServerHandler(){
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_port = htons(53);
-    addr.sin_addr.s_addr = inet_addr("10.152.0.3");//TODO брать из параметров
+    addr.sin_addr.s_addr = inet_addr(OptionReader::get_cstr_opt("dns_server"));
     if(connect(sock, (struct sockaddr *)&addr, sizeof(addr))==-1){
         errorflag=true;
         Logger::Instance().critical("Can't create UDP connection");

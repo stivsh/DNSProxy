@@ -18,7 +18,8 @@ SOURCES += main.cpp \
     event_handlers/HandlerFactory.cpp \
     event_handlers/NewConnectionHandler.cpp \
     event_handlers/UDPServerHandler.cpp \
-    event_handlers/eventhandler.cpp
+    event_handlers/eventhandler.cpp \
+    ../common/OptionReader.cpp
 
 HEADERS += \
     servercore.h \
@@ -28,5 +29,6 @@ HEADERS += \
     event_handlers/NewConnectionHandler.h \
     event_handlers/UDPServerHandler.h \
     event_handlers/ClientHandler.h \
-    event_handlers/HandlerFactory.h
+    event_handlers/HandlerFactory.h \
+    ../common/OptionReader.h
 DEFINES +=DEBUGSERV

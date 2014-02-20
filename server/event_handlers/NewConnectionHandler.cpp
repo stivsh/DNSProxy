@@ -1,5 +1,6 @@
 #include "NewConnectionHandler.h"
 #include "../servercore.h"
+#include "../../common/OptionReader.h"
 NewConnectionHandler::NewConnectionHandler(){
     int listener;
     struct sockaddr_in addr;
@@ -10,8 +11,8 @@ NewConnectionHandler::NewConnectionHandler(){
         ServerCore::CriticalError();
     }
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(8080);
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    addr.sin_port = htons((unsigned short)OptionReader::get_int_opt("listen_port"));
+    addr.sin_addr.s_addr = inet_addr(OptionReader::get_cstr_opt("listen_addr"));
     if(bind(listener, (struct sockaddr *)&addr, sizeof(addr)) < 0){
         Logger::Instance().critical("Can't bind listen port");
         ServerCore::CriticalError();

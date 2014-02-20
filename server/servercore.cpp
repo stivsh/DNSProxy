@@ -1,4 +1,5 @@
 #include "servercore.h"
+#include "../common/OptionReader.h"
 ServerCore* ServerCore::server=0;
 void ServerCore::external_command(COMMANDS command){
     switch(command){
@@ -86,6 +87,9 @@ int ServerCore::start_server(){
     ServerCore& server=Instance();
     server.start=true;
     while(server.start){
+        Logger::Instance().message("Reading options file");
+        OptionReader::LoadFromFile("/etc/dnsproxyserver_config");
+        Logger::Instance().message(OptionReader::as_string().c_str());
         Logger::Instance().message("Create standart handlers");
         server.hfact.create_listener_handler();
         server.hfact.create_udpserver_handler();
