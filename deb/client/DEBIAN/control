@@ -1,0 +1,8 @@
+Package:	dnsproxyclient
+Version:	2.1.2-2
+Maintainer:	SorokinSA stivsh@gmail.com
+Architecture:	amd64
+Section: net
+Description: DNS packets proxy client
+
+

@@ -24,51 +24,49 @@ class Logger{
              }
          }
      }
-
-public:
-    void critical(const char* mes){
+     public:
+     void critical(const char* mes){
         syslog(3,"CRITICAL:%s ERRNO:%d",mes,errno);
-    }
-    void error(const char* mes){
+     }
+     void error(const char* mes){
         syslog(2,"ERROR:%s ERRNO:%d",mes,errno);
-    }
-    void warning(const char* mes){
+     }
+     void warning(const char* mes){
         syslog(1,"WARNING:%s",mes);
-    }
-    void message(const char* mes){
+     }
+     void message(const char* mes){
         syslog(0,"MESS:%s",mes);
-    }
-    void debug(const char* mes){
+     }
+     void debug(const char* mes){
         (void)mes;
         #ifdef DEBUGSERV
         syslog(0,"DEBUG:%s",mes);
         #endif
-    }
-    void client_error(const char* mes,struct sockaddr *addr){
+     }
+     void client_error(const char* mes,struct sockaddr *addr){
         client_log(2,"ERROR",mes,addr);
-    }
-    void client_message(const char* mes,struct sockaddr *addr){
+     }
+     void client_message(const char* mes,struct sockaddr *addr){
          client_log(0,"MESS",mes,addr);
-    }
-    void client_debug(const char* mes,struct sockaddr *addr){
+     }
+     void client_debug(const char* mes,struct sockaddr *addr){
         (void)mes;
         (void)addr;
         #ifdef DEBUGSERV
         client_log(0,"DEBUG",mes,addr);
         #endif
-    }
-
-static Logger& Instance()
+     }
+     static Logger& Instance()
         {
                 static Logger theSingleInstance;
                 return theSingleInstance;
         }
 private:
-    Logger(){
+     Logger(){
         openlog("DNSProxy",0,LOG_DAEMON);
-    }
-    Logger(const Logger& root){(void)root;}
-    Logger& operator=(const Logger& s){(void)s;return *this;}
+     }
+     Logger(const Logger& root){(void)root;}
+     Logger& operator=(const Logger& s){(void)s;return *this;}
 };
 
 #endif // LOGGER_H

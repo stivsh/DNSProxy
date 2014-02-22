@@ -1,0 +1,4 @@
+#ifndef COMMONDEFINES_H
+#define COMMONDEFINES_H
+enum ServerCommands{STOP=0,RESTART=1};
+#endif // COMMONDEFINES_H

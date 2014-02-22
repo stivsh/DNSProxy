@@ -1,14 +1,14 @@
 #include "servercore.h"
 #include "../common/OptionReader.h"
 ServerCore* ServerCore::server=0;
-void ServerCore::external_command(COMMANDS command){
+void ServerCore::external_command(ServerCommands command){
     switch(command){
         case STOP:
-            start=false;
-            restart=true;
+            ServerCore::Instance().start=false;
+            ServerCore::Instance().restart=true;
             break;
         case RESTART:
-            restart=true;
+            ServerCore::Instance().restart=true;
             break;
     }
 }
@@ -48,10 +48,15 @@ void deferred_handlers_delete(std::set<EventHandler*> &handlers_to_delete,Handle
     }
     handlers_to_delete.clear();
 }
-
+void WatchDogHandler(){
+    Logger::Instance().critical("dnsproxy server watch dog event");
+    exit(1);
+}
 void ServerCore::start_loop(){
+    WatchDogTimer wdtimer(2,WatchDogHandler);
     time(&last_time_check);
     while(!restart){
+        wdtimer.reset_timer();
         fd_set readset;
         fd_set writeset;
         fd_set exceptset;
@@ -87,24 +92,23 @@ int ServerCore::start_server(){
     ServerCore& server=Instance();
     server.start=true;
     while(server.start){
-        Logger::Instance().message("Reading options file");
-        OptionReader::LoadFromFile("/etc/dnsproxyserver_config");
+        Logger::Instance().message("Reading server options file");
+        OptionReader::LoadFromFile("/etc/dnsproxy/dnsproxyserver.config");
         Logger::Instance().message(OptionReader::as_string().c_str());
         Logger::Instance().message("Create standart handlers");
         server.hfact.create_listener_handler();
         server.hfact.create_udpserver_handler();
         server.restart=false;
-        Logger::Instance().message("Start loop");
+        Logger::Instance().message("Start server loop");
         server.start_loop();
-        Logger::Instance().message("Stop loop");
+        Logger::Instance().message("Stop server loop");
         server.hfact.revoke_all_handlers();
         if(server.start)
-            sleep(120);
+            usleep(120*1000);
     }
     Logger::Instance().message("Stop server");
     DeleteServer();
     return 0;
-
 }
 ServerCore& ServerCore::Instance(){
     if(server==0)server = new ServerCore();

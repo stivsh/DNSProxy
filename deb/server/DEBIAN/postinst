@@ -1,4 +1,4 @@
 chmod 500 /usr/sbin/dnsproxyserver
-chmod 660 /etc/dnsproxyserver_config
+chmod 660 /etc/dnsproxy/dnsproxyserver.config
 chmod 755 /etc/init.d/dnsproxyserver
 insserv -v /etc/init.d/dnsproxyserver

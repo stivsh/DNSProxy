@@ -19,16 +19,22 @@ SOURCES += main.cpp \
     event_handlers/NewConnectionHandler.cpp \
     event_handlers/UDPServerHandler.cpp \
     event_handlers/eventhandler.cpp \
-    ../common/OptionReader.cpp
+    ../common/OptionReader.cpp \
+    ../common/logger.cpp \
+    ../common/serverrunenvironment.cpp \
+    ../common/watchdogtimer.cpp
 
 HEADERS += \
     servercore.h \
     event_handlers/eventhandler.h \
     event_handlers/messidentconteiner.h \
-    logger.h \
     event_handlers/NewConnectionHandler.h \
     event_handlers/UDPServerHandler.h \
     event_handlers/ClientHandler.h \
     event_handlers/HandlerFactory.h \
-    ../common/OptionReader.h
-DEFINES +=DEBUGSERV
+    ../common/OptionReader.h \
+    ../common/logger.h \
+    ../common/commondefines.h \
+    ../common/serverrunenvironment.h \
+    ../common/watchdogtimer.h
+LIBS +=-lrt

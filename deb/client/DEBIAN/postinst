@@ -1,0 +1,4 @@
+chmod 500 /usr/bin/dnsproxyclient
+chmod 660 /etc/dnsproxy/dnsproxyclient.config
+chmod 755 /etc/init.d/dnsproxyclient
+insserv -v /etc/init.d/dnsproxyclient

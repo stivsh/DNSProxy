@@ -13,14 +13,9 @@
 #include <limits>
 #include "event_handlers/eventhandler.h"
 #include "event_handlers/HandlerFactory.h"
-/**
- * @brief The ServerCore class
- *
- */
+#include "../common/commondefines.h"
+#include "../common/watchdogtimer.h"
 class ServerCore{
-    /**
-     * @brief server
-     */
     static ServerCore* server;
     volatile bool start;
     volatile bool restart;
@@ -29,8 +24,7 @@ class ServerCore{
     std::set<EventHandler*> handlers_to_delete;
     void start_loop();
  public:
-    enum COMMANDS{STOP=0,RESTART=1};
-    void external_command(COMMANDS command);
+    static void external_command(ServerCommands command);
     void delete_handler_next_itration(EventHandler* handler);
     static int start_server();
     static void CriticalError();

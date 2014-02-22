@@ -1,0 +1,8 @@
+if [ -r /var/run/dnsproxyclient.pid ]
+	then
+		kill -2 `cat /var/run/dnsproxyclient.pid`
+		sleep 2
+		ps aux | grep dnsproxyclient && killall dnsproxyclient
+	else
+		killall dnsproxyclient
+fi
