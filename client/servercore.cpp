@@ -54,8 +54,8 @@ int ServerCore::start_server(){
 void reg_udp_sock(){
     struct sockaddr_in uaddr;
     uaddr.sin_family = AF_INET;
-    uaddr.sin_port = htons(3425);
-    uaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    uaddr.sin_port = htons(OptionReader::get_int_opt("client_listen_port"));
+    uaddr.sin_addr.s_addr = inet_addr(OptionReader::get_cstr_opt("client_listen_inter"));
     udp_listener = socket(AF_INET, SOCK_DGRAM, 0);
     if(udp_listener < 0)
     {
@@ -83,8 +83,8 @@ unsigned short get_new_ident(unsigned short old){
 void reg_tcp_sock(){
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(8080); //TODO опт. или любой другой порт...
-    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    addr.sin_port = htons(OptionReader::get_int_opt("proxy_tcp_port"));
+    addr.sin_addr.s_addr = inet_addr(OptionReader::get_cstr_opt("proxy_addr"));
     serv_sock = socket(AF_INET, SOCK_STREAM, 0);
     if(serv_sock < 0)
     {
@@ -157,13 +157,12 @@ void try_to_send_response(){
 void tct_ready_read(){
     int bytesr=recv(serv_sock,inbuff+inpos,buff_max-inpos,0);
     if(bytesr==0){
-        perror("server drop connection");
+        Logger::Instance().error("server drop connection");
         reg_tcp_sock();
     }else if(bytesr<0){
-        perror("tcp reading error");
+        Logger::Instance().critical("tcp reading error");
         exit(9);
     }else if(bytesr>0){
-        printf("new message");
         inpos+=bytesr;
         try_to_send_response();
     }
@@ -260,8 +259,6 @@ void ServerCore::start_loop(){
         fill_sets();
         int select_ret=select(((serv_sock>udp_listener)?serv_sock:udp_listener)+1,&readset,&writeset,&exceptset,&timeout);
         if(select_ret<0){
-            perror("select");
-            exit(3);
         }else if(select_ret>0){
             evalute_handlers();
         }

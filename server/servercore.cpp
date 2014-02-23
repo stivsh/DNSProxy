@@ -72,10 +72,7 @@ void ServerCore::start_loop(){
             evalute_events(&readset,&writeset,&exceptset,hfact.get_handler_map());
         }
         if(select_ret<0){
-            if(!restart){
-                Logger::Instance().critical("polling error");
-                ServerCore::CriticalError();
-            }
+
         }
         if(difftime(time(0),last_time_check)>10){//TODO мин из параметров
             evalute_time_out_events(hfact.get_handlers_set());

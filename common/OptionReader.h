@@ -17,8 +17,12 @@ class OptionReader{
     void default_opt(){
         str_opt["dns_server"]="8.8.8.8";
         str_opt["listen_addr"]="0.0.0.0";
+        str_opt["proxy_addr"]="0.0.0.0";
+        str_opt["client_listen_inter"]="0.0.0.0";
         int_opt["client_no_reply_time"]=8000;
         int_opt["listen_port"]=80;
+        int_opt["proxy_tcp_port"]=80;
+        int_opt["client_listen_port"]=53;
     }
     OptionReader(){
         default_opt();
