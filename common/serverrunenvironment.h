@@ -13,6 +13,7 @@
 #include <sys/wait.h>
 #include "logger.h"
 #include "commondefines.h"
+void crit_sighandler(int sig, siginfo_t *info, void *context);
 template<class Server>
 void sighendler(int sig){
     if(SIGTERM==sig||sig==SIGINT){//заверщение
@@ -24,20 +25,22 @@ void sighendler(int sig){
         Server::external_command(RESTART);
     }
 }
-/*void crit_sighandler(int sig){
-    (void)sig;
-    exit(1);
-    //TODO stack trace to log
-}*/
+
 template<class Server>
 class ServerRunEnvironment{
     std::string pid_file;
     int start_server(){
         //critical signals
-       // signal(SIGFPE,crit_sighandler);
-       // signal(SIGILL,crit_sighandler);
-        //signal(SIGSEGV,crit_sighandler);
-        //signal(SIGBUS,crit_sighandler);
+        struct sigaction sigact;
+        sigact.sa_flags = SA_SIGINFO;
+        sigact.sa_sigaction = crit_sighandler;
+        sigemptyset(&sigact.sa_mask);
+
+        sigaction(SIGFPE, &sigact, 0); // ошибка FPU
+        sigaction(SIGILL, &sigact, 0); // ошибочная инструкция
+        sigaction(SIGSEGV, &sigact, 0); // ошибка доступа к памяти
+        sigaction(SIGBUS, &sigact, 0); // ошибка шины, при обращении к физической памяти
+
         //control signals
         signal(SIGTERM, sighendler<Server>);
         signal(SIGINT, sighendler<Server>);

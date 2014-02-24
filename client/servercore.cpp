@@ -148,7 +148,7 @@ void try_to_send_response(){
     ssize_t bytes_writen=sendto(udp_listener,inbuff+sizeof(short),len,0,&client_data.from,client_data.fromlen);
     if(bytes_writen<len){
         char buf[1024];
-        sprintf(buf,"mess size:%d writen:%l",len,bytes_writen);
+        sprintf(buf,"mess size:%d writen:%d",(int)len,(int)bytes_writen);
         Logger::Instance().message(buf);
     }
     memmove(inbuff,inbuff+sizeof(short)+len,inpos-(sizeof(short)+len));

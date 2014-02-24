@@ -4,7 +4,6 @@ std::map<int,WDTInfo> WatchDogTimer::WDtimersInfo;
 int WatchDogTimer::nextid=1;
 bool WatchDogTimer::timer_registred=false;
 timer_t WatchDogTimer::tid=0;
-
 void timer_handler(int signo, siginfo_t *info,void *context){
   (void)signo;
   (void)context;

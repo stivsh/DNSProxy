@@ -5,22 +5,35 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 class Logger{
-     void client_log(int pri,const char* prefix,const char* mes,struct sockaddr *addr){
+     void client_log(int pri,const char* prefix,const char* mes,struct sockaddr *addr,bool errnob=false){
          if(addr==0){
-             syslog(pri,"%s:%s ERRNO:%d",prefix,mes,errno);
+             if(errnob)
+                syslog(pri,"%s:%s ERRNO:%d",prefix,mes,errno);
+             else
+                 syslog(pri,"%s:%s",prefix,mes);
          }else{
              if(addr->sa_family==AF_INET){
                  struct sockaddr_in* addr_in=(struct sockaddr_in*)addr;
                  char str[INET_ADDRSTRLEN];
                  inet_ntop(AF_INET, &(addr_in->sin_addr), str, INET_ADDRSTRLEN);
-                 syslog(pri,"%s:%s IP:%s ERRNO:%d",prefix,mes,str,errno);
+                 if(errnob)
+                    syslog(pri,"%s:%s IP:%s ERRNO:%d",prefix,mes,str,errno);
+                 else
+                    syslog(pri,"%s:%s IP:%s",prefix,mes,str);
              }else if(addr->sa_family==AF_INET6){
                  struct sockaddr_in6* addr_in=(struct sockaddr_in6*)addr;
                  char str[INET6_ADDRSTRLEN];
                  inet_ntop(AF_INET6, &(addr_in->sin6_addr), str, INET6_ADDRSTRLEN);
-                 syslog(pri,"%s:%s IP:%s ERRNO:%d",prefix,mes,str,errno);
+                 if(errnob)
+                    syslog(pri,"%s:%s IP:%s ERRNO:%d",prefix,mes,str,errno);
+                 else
+                    syslog(pri,"%s:%s IP:%s",prefix,mes,str);
              }else{
-                 syslog(pri,"%s:%s ERRNO:%d",prefix,mes,errno);
+                 if(errnob)
+                    syslog(pri,"%s:%s ERRNO:%d",prefix,mes,errno);
+                 else
+                    syslog(pri,"%s:%s",prefix,mes);
+
              }
          }
      }
@@ -44,7 +57,7 @@ class Logger{
         #endif
      }
      void client_error(const char* mes,struct sockaddr *addr){
-        client_log(2,"ERROR",mes,addr);
+        client_log(2,"ERROR",mes,addr,true);
      }
      void client_message(const char* mes,struct sockaddr *addr){
          client_log(0,"MESS",mes,addr);
