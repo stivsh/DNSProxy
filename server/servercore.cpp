@@ -49,7 +49,7 @@ void deferred_handlers_delete(std::set<EventHandler*> &handlers_to_delete,Handle
     handlers_to_delete.clear();
 }
 void WatchDogHandler(){
-    Logger::Instance().critical("dnsproxy server watch dog event");
+    Logger::critical()<<"dnsproxy server watch dog event"<<Logger::endl;
     exit(1);
 }
 void ServerCore::start_loop(){
@@ -85,25 +85,25 @@ HandlerFactory& ServerCore::get_hfact(){
     return hfact;
 }
 int ServerCore::start_server(){
-    Logger::Instance().message("Start server");
+    Logger::message()<<"Start server"<<Logger::endl;
     ServerCore& server=Instance();
     server.start=true;
     while(server.start){
-        Logger::Instance().message("Reading server options file");
+        Logger::message()<<"Reading server options file"<<Logger::endl;
         OptionReader::LoadFromFile("/etc/dnsproxy/dnsproxyserver.config");
-        Logger::Instance().message(OptionReader::as_string().c_str());
-        Logger::Instance().message("Create standart handlers");
+        Logger::message()<<OptionReader::as_string()<<Logger::endl;
+        Logger::message()<<"Create standart handlers"<<Logger::endl;
         server.hfact.create_listener_handler();
         server.hfact.create_udpserver_handler();
         server.restart=false;
-        Logger::Instance().message("Start server loop");
+        Logger::message()<<"Start server loop"<<Logger::endl;
         server.start_loop();
-        Logger::Instance().message("Stop server loop");
+        Logger::message()<<"Stop server loop"<<Logger::endl;
         server.hfact.revoke_all_handlers();
         if(server.start)
             usleep(120*1000);
     }
-    Logger::Instance().message("Stop server");
+    Logger::message()<<"Stop server"<<Logger::endl;
     DeleteServer();
     return 0;
 }
@@ -115,7 +115,7 @@ void ServerCore::DeleteServer(){
     delete server;
 }
 void ServerCore::CriticalError(){
-    Logger::Instance().critical("Stoping vie critical error");
+    Logger::message()<<"Stoping vie critical error"<<Logger::endl;
     ServerCore::Instance().hfact.revoke_all_handlers();
     ServerCore::DeleteServer();
     exit(1);

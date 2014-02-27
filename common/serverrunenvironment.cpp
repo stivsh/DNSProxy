@@ -6,11 +6,8 @@ void crit_sighandler(int sig, siginfo_t *info, void *context){
     int    x;
     int    TraceSize;
     char** Messages;
-    char buff[1024];
-
     // запишем в лог что за сигнал пришел
-    sprintf(buff,"Signal: %s, %p\n", strsignal(sig), info->si_addr);
-    Logger::Instance().critical(buff);
+    Logger::critical()<<"Signal:"<<strsignal(sig)<<", "<<info->si_addr<<Logger::endl;
 
     #if __WORDSIZE == 64 // если дело имеем с 64 битной ОС
         // получим адрес инструкции которая вызвала ошибку
@@ -26,18 +23,11 @@ void crit_sighandler(int sig, siginfo_t *info, void *context){
 
     // получим расшифровку трасировки
     Messages = backtrace_symbols(Trace, TraceSize);
-    if (Messages)
-    {
-        Logger::Instance().message("== Backtrace ==");
-
-        // запишем в лог
+    if (Messages){
+        Logger::message()<<"== Backtrace =="<<Logger::endl;
         for (x = 1; x < TraceSize; x++)
-        {
-            sprintf(buff,"%s\n", Messages[x]);
-            Logger::Instance().message(buff);
-        }
-
-        Logger::Instance().message("== End Backtrace ==\n");
+            Logger::message()<<Messages[x]<<Logger::endl;
+        Logger::message()<<"== End Backtrace =="<<Logger::endl;
         free(Messages);
     }
     exit(8);

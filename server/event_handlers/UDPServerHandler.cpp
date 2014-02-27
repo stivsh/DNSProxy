@@ -1,11 +1,10 @@
 #include "UDPServerHandler.h"
 #include "../servercore.h"
-#include "../../common/OptionReader.h"
 UDPServerHandler::UDPServerHandler(){
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if(sock<0){
         errorflag=true;
-        Logger::Instance().critical("Can't create UDP sock");
+        Logger::critical()<<"Can't create UDP sock ERRNO:"<<errno<<Logger::endl;
         ServerCore::CriticalError();
     }
     struct sockaddr_in addr;
@@ -14,60 +13,58 @@ UDPServerHandler::UDPServerHandler(){
     addr.sin_addr.s_addr = inet_addr(OptionReader::get_cstr_opt("dns_server"));
     if(connect(sock, (struct sockaddr *)&addr, sizeof(addr))==-1){
         errorflag=true;
-        Logger::Instance().critical("Can't create UDP connection");
+        Logger::critical()<<"Can't create UDP connection ERRNO:"<<errno<<Logger::endl;
         ServerCore::CriticalError();
     }
     fcntl(sock, F_SETFL, O_NONBLOCK);
     sd=sock;
 }
-void UDPServerHandler::new_request(ClientHandler* ch,char* request, unsigned short len){
-    if(len>65527){//TODO точный размер
-        Logger::Instance().client_message("To long UDP request",ch->get_addr());
+void UDPServerHandler::new_request(ClientHandler* ch,DNSPack request){
+    uint16_t new_mess_id=mescont.gen_new_id(request.get_header().get_ident(),ch);
+    if(new_mess_id==0){
+        Logger::error()<<"Can't create new mess id"<<*(ch->get_addr())<<Logger::endl;
         return;
     }
-    unsigned short message_id;
-    memcpy(&message_id,request,sizeof(short));
-    message_id=ntohs(message_id);
-    unsigned short new_id=mescont.get_new_id(message_id,ch);
-    if(new_id==0){
-        Logger::Instance().client_message("Can't create new mess id",ch->get_addr());
+    request.get_header().set_ident(new_mess_id);
+    Buffer outbuff;
+    if(request.write_to_buff(outbuff,true)!=OK){
+        Logger::critical()<<"DNS output buffer overflow"<<Logger::endl;
         return;
     }
-    new_id=htons(new_id);
-    memcpy(request,&new_id,sizeof(short));
-    send(sd, request,len, 0);
+    outbuff.sendsd(sd);
 }
 void UDPServerHandler::handler_removed(EventHandler* handler){
     mescont.delete_all_id_ralated_to(handler);
-
 }
 
 void UDPServerHandler::ready_read(){
-    char _buf[1024];
-    char* buf=_buf;
-    int bytes_read = recv(sd, buf, 1024, 0);
+    Buffer inbuff;
+    int bytes_read =inbuff.recvsd(sd);
     if(bytes_read<0){
-        Logger::Instance().error("Can't read UDP reply");
+        Logger::error()<<"Can't read UDP reply ERRNO:"<<errno<<Logger::endl;
     }
     if(bytes_read>0){
-        if(!((unsigned short)bytes_read<sizeof(unsigned short)+1)){
-            unsigned short message_id;
-            memcpy(&message_id,buf,sizeof(message_id));
-            message_id=ntohs(message_id);
-            unsigned short old_id=mescont.get_orig_id(message_id);
-            ClientHandler* handler=static_cast<ClientHandler*>(mescont.get_handler(message_id));
-            if(handler!=0 && old_id!=0){
-                mescont.release_id(message_id);
-                unsigned short netold_id=htons(old_id);
-                memcpy(buf,&netold_id,sizeof(short));
-                handler->new_reply_from_server(buf, bytes_read);
-            }
+        DNSPack reply;
+        PARCER_RETURN pret=reply.load_from_buff(inbuff,true);
+        if(pret!=OK){
+            Logger::error()<<"Can't read DNS reply:"<<PARCER_RETURN_AS_STR(pret)<<Logger::endl;
+            return;
         }
+        uint16_t message_id=reply.get_header().get_ident();
+        uint16_t old_id=mescont.get_orig_id(message_id);
+        ClientHandler* handler=static_cast<ClientHandler*>(mescont.get_handler(message_id));
+        if(handler==0 || old_id==0){
+            return;
+        }
+
+        mescont.release_id(message_id);
+        reply.get_header().set_ident(old_id);
+        handler->new_reply_from_server(reply);
     }
 }
 
 void UDPServerHandler::exeption(){
-    Logger::Instance().error("UDP Handler exection");
+    Logger::error()<<"UDP Handler exection ERRNO:"<<errno<<Logger::endl;
 }
 
 void UDPServerHandler::time_out(){

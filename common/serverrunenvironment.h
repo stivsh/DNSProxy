@@ -17,11 +17,11 @@ void crit_sighandler(int sig, siginfo_t *info, void *context);
 template<class Server>
 void sighendler(int sig){
     if(SIGTERM==sig||sig==SIGINT){//заверщение
-        Logger::Instance().message("Signal SIGTERM|SIGINT cath");
+        Logger::message()<<"Signal SIGTERM|SIGINT cath"<<Logger::endl;
         Server::external_command(STOP);
 
     }else if(SIGHUP==sig){//перезагрузка
-        Logger::Instance().message("Signal SIGHUP cath");
+        Logger::message()<<"Signal SIGHUP cath"<<Logger::endl;
         Server::external_command(RESTART);
     }
 }
@@ -51,7 +51,7 @@ class ServerRunEnvironment{
     pid_t start_server_in_other_thread(){
         pid_t pid=fork();
         if(pid==-1){
-            Logger::Instance().critical("Can't create thread!");
+            Logger::critical()<<"Can't create thread! ERRNO:"<<errno<<Logger::endl;
         }else if(!pid){
             exit(start_server());
         }else if(pid>0){
@@ -61,19 +61,20 @@ class ServerRunEnvironment{
                 fprintf(f, "%u", pid);
                 fclose(f);
             }
+            //TODO else error
         }
         return pid;
     }
     int run_control_thread(){
         for(;;){
             remove(pid_file.c_str());
-            Logger::Instance().message("Running Demon");
+            Logger::message()<<"Running Demon"<<Logger::endl;
             pid_t pid=start_server_in_other_thread();
             if(pid>0){
                 int status;
                 waitpid(pid,&status,0);
                 if(WIFEXITED(status)&&!WEXITSTATUS(status)){
-                    Logger::Instance().message("Demon closed sucsessful");
+                    Logger::message()<<"Demon closed sucsessful"<<Logger::endl;
                     return 0;
                 }
                 usleep(60*1000);
@@ -86,8 +87,7 @@ class ServerRunEnvironment{
     void run_as_demon(){
         int pid = fork();
         if(pid==-1){
-            perror("Error: Start Daemon failed");
-            Logger::Instance().critical("Can't create thread!");
+            Logger::critical()<<"Can't create thread! ERRNO:"<<errno<<Logger::endl;
             exit(1);
         }else if(!pid){
             umask(0);

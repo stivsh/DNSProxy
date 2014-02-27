@@ -12,21 +12,21 @@ void ServerCore::external_command(ServerCommands command){
     }
 }
 int ServerCore::start_server(){
-    Logger::Instance().message("Start client server");
+    Logger::message()<<"Start client server"<<Logger::endl;
     ServerCore& server=Instance();
     server.start=true;
     while(server.start){
-        Logger::Instance().message("Reading client options file");
+        Logger::message()<<"Reading client options file"<<Logger::endl;
         OptionReader::LoadFromFile("/etc/dnsproxy/dnsproxyclient.config");
-        Logger::Instance().message(OptionReader::as_string().c_str());
-        Logger::Instance().message("Start client loop");
+        Logger::message()<<OptionReader::as_string()<<Logger::endl;
+        Logger::message()<<"Start client loop"<<Logger::endl;
         server.restart=false;
         server.start_loop();
-        Logger::Instance().message("Stop client loop");
+        Logger::message()<<"Stop client loop"<<Logger::endl;
         if(server.start)
             usleep(120*1000);
     }
-    Logger::Instance().message("Stop client server");
+    Logger::message()<<"Stop client server"<<Logger::endl;
     return 0;
 }
     std::map<unsigned short,UDPClientData> indent_to_old;
@@ -47,7 +47,7 @@ int ServerCore::start_server(){
     void WatchDogHandler(){
         close(serv_sock);
         close(udp_listener);
-        Logger::Instance().critical("dnsproxy client watch dog event");
+        Logger::critical()<<"dnsproxy client watch dog event"<<Logger::endl;
         exit(1);
     }
 
@@ -59,13 +59,13 @@ void reg_udp_sock(){
     udp_listener = socket(AF_INET, SOCK_DGRAM, 0);
     if(udp_listener < 0)
     {
-        Logger::Instance().critical("udp socket error");
+        Logger::critical()<<"udp socket error ERRNO:"<<errno<<Logger::endl;
         exit(1);
     }
     fcntl(udp_listener, F_SETFL, O_NONBLOCK);
     if(bind(udp_listener, (struct sockaddr *)&uaddr, sizeof(uaddr)) < 0)
     {
-        Logger::Instance().critical("udp bind error");
+        Logger::critical()<<"udp bind error ERRNO:"<<errno<<Logger::endl;
         exit(2);
     }
 }
@@ -88,16 +88,16 @@ void reg_tcp_sock(){
     serv_sock = socket(AF_INET, SOCK_STREAM, 0);
     if(serv_sock < 0)
     {
-        Logger::Instance().critical("reg tcp socket error");
+        Logger::critical()<<"reg tcp socket error ERRNO:"<<errno<<Logger::endl;
         exit(1);
     }
     if(connect(serv_sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
     {
-        Logger::Instance().critical("connection error");
+        Logger::critical()<<"connection error ERRNO:"<<errno<<Logger::endl;
         exit(2);
     }
     if(fcntl(serv_sock, F_SETFL, O_NONBLOCK)==-1){
-        Logger::Instance().critical("fcntl error. nonblock");
+        Logger::critical()<<"fcntl error. nonblock ERRNO:"<<errno<<Logger::endl;
         exit(2);
     }
 }
@@ -115,30 +115,30 @@ void fill_sets(){
 }
 
 void tcp_error(){
-    Logger::Instance().critical("tcp error");
+    Logger::critical()<<"tcp error ERRNO:"<<errno<<Logger::endl;
     exit(4);
 }
 void udp_error(){
-    Logger::Instance().critical("udp error");
+    Logger::critical()<<"udp error ERRNO:"<<errno<<Logger::endl;
     exit(5);
 }
 void try_to_send_response(){
     if(inpos<=sizeof(short)){
-        Logger::Instance().message("not enoth bytes in input buffer");
+        Logger::message()<<"not enoth bytes in input buffer"<<Logger::endl;
         return;
     }
     unsigned short len;
     memcpy(&len,inbuff,sizeof(short));
     len=ntohs(len);
     if(len>(inpos-sizeof(short))){
-        Logger::Instance().message("len of message greater than inbuff size");
+        Logger::message()<<"len of message greater than inbuff size"<<Logger::endl;
         return;
     }
     unsigned short new_id;
     memcpy(&new_id,inbuff+sizeof(short),sizeof(short));
     new_id=ntohs(new_id);
     if(!indent_to_old.count(new_id)){
-        Logger::Instance().message("there is no id for message in map");
+        Logger::message()<<"there is no id for message in map"<<Logger::endl;
         return;
     }
     UDPClientData client_data=indent_to_old[new_id];
@@ -147,9 +147,7 @@ void try_to_send_response(){
     memcpy(inbuff+sizeof(short),&(client_data.mess_id),sizeof(short));
     ssize_t bytes_writen=sendto(udp_listener,inbuff+sizeof(short),len,0,&client_data.from,client_data.fromlen);
     if(bytes_writen<len){
-        char buf[1024];
-        sprintf(buf,"mess size:%d writen:%d",(int)len,(int)bytes_writen);
-        Logger::Instance().message(buf);
+        Logger::message()<<"mess size:"<<len<<" writen:"<<bytes_writen<<Logger::endl;
     }
     memmove(inbuff,inbuff+sizeof(short)+len,inpos-(sizeof(short)+len));
     inpos-=sizeof(short)+len;
@@ -157,10 +155,10 @@ void try_to_send_response(){
 void tct_ready_read(){
     int bytesr=recv(serv_sock,inbuff+inpos,buff_max-inpos,0);
     if(bytesr==0){
-        Logger::Instance().error("server drop connection");
+        Logger::error()<<"server drop connection"<<Logger::endl;
         reg_tcp_sock();
     }else if(bytesr<0){
-        Logger::Instance().critical("tcp reading error");
+        Logger::critical()<<"tcp reading error ERRNO:"<<errno<<Logger::endl;
         exit(9);
     }else if(bytesr>0){
         inpos+=bytesr;
@@ -172,9 +170,9 @@ void try_to_write_tcp(){
     if(opos<=sizeof(short))return;
     int bytesw=send(serv_sock,obuff,opos,0);
     if(bytesw==0){
-        Logger::Instance().message("0 bytes writen to server");
+        Logger::message()<<"0 bytes writen to server ERRNO:"<<errno<<Logger::endl;
     }else if(bytesw<0){
-        Logger::Instance().message("TCP write error");
+        Logger::message()<<"TCP write error ERRNO:"<<errno<<Logger::endl;
         exit(7);
     }else if(bytesw>0){
         memmove(obuff,obuff+bytesw,opos-bytesw);
@@ -190,18 +188,18 @@ void udp_ready_read(){
     char *tm_buff=_tm_buff;
     int bytesc=recvfrom(udp_listener,tm_buff,buff_max,0,&cl_data.from,&cl_data.fromlen);
     if(bytesc==-1){
-        Logger::Instance().message("udp read error");
+        Logger::message()<<"udp read error ERRNO:"<<errno<<Logger::endl;
         exit(6);
     }else if(bytesc>(int)sizeof(short)){
         if((int)(opos+sizeof(short)+bytesc)>buff_max){
-            Logger::Instance().message("input buffer overflow");
+            Logger::message()<<"input buffer overflow"<<Logger::endl;
             return;
         }
         memcpy(&(cl_data.mess_id),tm_buff,sizeof(short));
         cl_data.mess_id=ntohs(cl_data.mess_id);
         unsigned short new_id=get_new_ident(cl_data.mess_id);
         if(new_id==0){
-            Logger::Instance().message("Can't create new id for message");
+            Logger::message()<<"Can't create new id for message"<<Logger::endl;
             return;
         }
         indent_to_old[new_id]=cl_data;

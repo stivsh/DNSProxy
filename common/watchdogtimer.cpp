@@ -86,7 +86,7 @@ void WatchDogTimer::register_timer(){
     sigemptyset(&sa.sa_mask);
     sa.sa_sigaction = timer_handler;
     if (sigaction(SIGRTMIN, &sa, NULL) == -1) {
-      Logger::Instance().critical("WatchDog sigaction failed");
+      Logger::critical()<<"WatchDog sigaction failed"<<Logger::endl;
       exit(5);
     }
     /*По завершении работы таймера должен быть послан
@@ -97,7 +97,7 @@ void WatchDogTimer::register_timer(){
     sigev.sigev_value.sival_int = 1;
     //Создаём таймер.
     if(timer_create(CLOCK_MONOTONIC, &sigev, &tid) == -1){
-      Logger::Instance().critical("WatchDog timer_create");
+      Logger::critical()<<"WatchDog timer_create"<<Logger::endl;
       exit(6);
     }
     ival.it_value.tv_sec = 4;
@@ -105,7 +105,7 @@ void WatchDogTimer::register_timer(){
     ival.it_interval.tv_sec = 2;
     ival.it_interval.tv_nsec = 0;
     if (timer_settime(tid, 0, &ival, NULL) == -1){
-      Logger::Instance().critical("WatchDog timer_settime");
+      Logger::critical()<<"WatchDog timer_settime"<<Logger::endl;
       exit(7);
     }
 }

@@ -2,83 +2,81 @@
 #include "../servercore.h"
 #include "../../common/OptionReader.h"
 ClientHandler::ClientHandler(int sd_,UDPServerHandler* _uservh,struct sockaddr addr_):
-    uservh(_uservh),addr(addr_),inbuffer(inbuffer_arr),outbuffer(outbuffer_arr),inpos(0),outpos(0){
+    uservh(_uservh),addr(addr_){
     sd=sd_;
     time(&last_reply_to_client);
-    Logger::Instance().client_message("New connection",&addr);
+    Logger::message()<<"New connection"<<addr<<Logger::endl;
 }
 struct sockaddr* ClientHandler::get_addr(){
     return &addr;
 }
 void ClientHandler::drop_connection(){
     errorflag=true;
-    Logger::Instance().client_debug("Drop connection",&addr);
+    Logger::debug()<<"Drop connection"<<addr<<Logger::endl;
     ServerCore::Instance().delete_handler_next_itration(this);
 }
 
 void ClientHandler::send_request_to_server(){
-    while(true){
-        if(inpos<=sizeof(short))return;
-        unsigned short mess_len;
-        memcpy(&mess_len,inbuffer,sizeof(short));
-        mess_len=ntohs(mess_len);
-        if(mess_len>inpos-sizeof(short)){
-            return;
-        }else{
-            Logger::Instance().client_debug("Send reauest to server",&addr);
-            char* message=inbuffer+sizeof(short);
-            uservh->new_request(this,message,mess_len);
-            inpos-=sizeof(short)+mess_len;
-            memcpy(inbuffer,inbuffer+sizeof(short)+mess_len,inpos);
-        }
+    DNSPack dns_query;
+    PARCER_RETURN pret=OK;
+    while(pret==OK){
+      pret=dns_query.load_from_buff(input_buf);
+      switch(pret){
+        case WRONG_FORMAT:
+            Logger::error()<<"input buffer wrong format. "<<addr<<Logger::endl;
+            drop_connection();
+            break;
+        case OVERFLOW:
+            Logger::error()<<"input buffer overflow. "<<addr<<Logger::endl;
+            drop_connection();
+            break;
+        case OK:
+            uservh->new_request(this,dns_query);
+            break;
+        default:
+            break;
+      }
     }
 }
 void ClientHandler::ready_read(){
     if(errorflag)return;
-    int bytes_read = recv(sd, inbuffer+inpos, max_buff-inpos, 0);
-    if(bytes_read>0){
-        inpos+=bytes_read;
-        Logger::Instance().client_debug("receive data from client",&addr);
+    int read_code = input_buf.recvsd(sd);
+    if(read_code>0){
+        Logger::debug()<<"receive data from client"<<addr<<Logger::endl;
         send_request_to_server();
-    }else if(bytes_read==0){
+    }else if(read_code==0){
         drop_connection();
-    }else if(bytes_read<0){
+    }else if(read_code<0){
         drop_connection();
-        Logger::Instance().client_error("Connection read error",&addr);
+        Logger::error()<<"Connection read error ERRNO:"<<errno<<addr<<Logger::endl;
     }
 }
 
 void ClientHandler::send_reply_to_client(){
-    if(outpos>0){
-        int bytes_writen=send(sd, outbuffer, outpos, 0);
+    if(output_buf.pos()){
+        int bytes_writen=output_buf.sendsd(sd);
         if(bytes_writen>0){
-            Logger::Instance().client_debug("Send reply to client",&addr);
-            outpos-=bytes_writen;
-            memcpy(outbuffer,outbuffer+bytes_writen,outpos);
-            if(outpos==0){
+            Logger::debug()<<"Send reply to client"<<addr<<Logger::endl;
+            if(!output_buf.pos()){
                 time(&last_reply_to_client);
-                Logger::Instance().client_debug("All clients responses war transmited",&addr);
+                Logger::debug()<<"All clients responses was transmited"<<addr<<Logger::endl;
             }
         }else if(bytes_writen<0){
-            Logger::Instance().client_error("Connection write error",&addr);
+            Logger::error()<<"Connection write error ERRNO:"<<errno<<addr<<Logger::endl;
             drop_connection();
         }else if(bytes_writen==0){
 
         }
     }
 }
-void ClientHandler::new_reply_from_server(char* reply, unsigned short len){
+void ClientHandler::new_reply_from_server(DNSPack &reply){
     if(errorflag)return;
-    if(outpos+len+sizeof(short)>max_buff){
-        Logger::Instance().client_error("Connection buffer overload",&addr);
+    PARCER_RETURN pret=reply.write_to_buff(output_buf);
+    if(pret!=OK){
+        Logger::error()<<"Can't write client reply to out buff:"<<PARCER_RETURN_AS_STR(pret)<<addr<<Logger::endl;
         drop_connection();
         return;
     }
-    Logger::Instance().client_debug("New reply from server",&addr);
-    unsigned short net_len=htons(len);
-    memcpy(outbuffer+outpos,&net_len,sizeof(short));
-    memcpy(outbuffer+outpos+sizeof(short),reply,len);
-    outpos+=len+sizeof(short);
     send_reply_to_client();
 }
 void ClientHandler::ready_write(){
@@ -93,7 +91,7 @@ void ClientHandler::exeption(){
 void ClientHandler::time_out(){
     if(errorflag)return;
     if(difftime(time(0),last_reply_to_client)>OptionReader::get_int_opt("client_no_reply_time")){
-        Logger::Instance().client_message("Drop connection. no activity",&addr);
+        Logger::message()<<"Drop connection. no activity"<<addr<<Logger::endl;
         drop_connection();
     }
 
@@ -101,6 +99,6 @@ void ClientHandler::time_out(){
 void ClientHandler::fill_fd_sets(fd_set *readset,fd_set *writeset,fd_set *exceptset){
     FD_SET(sd, readset);
     FD_SET(sd, exceptset);
-    if(outpos)
+    if(output_buf.pos())
         FD_SET(sd, writeset);
 }

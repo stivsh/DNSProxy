@@ -22,7 +22,9 @@ SOURCES += main.cpp \
     ../common/OptionReader.cpp \
     ../common/logger.cpp \
     ../common/serverrunenvironment.cpp \
-    ../common/watchdogtimer.cpp
+    ../common/watchdogtimer.cpp \
+    ../common/buffer.cpp \
+    ../common/dnspack.cpp
 
 HEADERS += \
     servercore.h \
@@ -36,5 +38,7 @@ HEADERS += \
     ../common/logger.h \
     ../common/commondefines.h \
     ../common/serverrunenvironment.h \
-    ../common/watchdogtimer.h
+    ../common/watchdogtimer.h \
+    ../common/buffer.h \
+    ../common/dnspack.h
 LIBS +=-lrt

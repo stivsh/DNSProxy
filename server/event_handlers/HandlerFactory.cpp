@@ -1,7 +1,7 @@
 #include "HandlerFactory.h"
 EventHandler* HandlerFactory::create_client_handler(int sd,struct sockaddr addr){
     if(!uservh){
-        Logger::Instance().error("Creating of client sock but dinn't create UDP con.");
+        Logger::error()<<"Creating of client sock but dinn't create UDP con. ERRNO:"<<errno<<Logger::endl;
         return 0;
     }
     EventHandler* handler=new ClientHandler(sd,uservh,addr);

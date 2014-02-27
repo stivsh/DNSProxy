@@ -1,8 +1,11 @@
+if [ -f  /etc/init.d/dnsproxyserver ]; then
+        insserv -v -r /etc/init.d/dnsproxyserver
+fi
 if [ -r /var/run/dnsproxyserver.pid ]
 	then
-		kill -2 `cat /var/run/dnsproxyserver.pid`
+		ps aux | grep dnsproxyserver | grep -v grep && kill -2 `cat /var/run/dnsproxyserver.pid`
 		sleep 2
-		ps aux | grep dnsproxyserver && killall dnsproxyserver
+		ps aux | grep dnsproxyserver | grep -v grep && killall dnsproxyserver
 	else
-		killall dnsproxyserver
+		ps aux | grep dnsproxyserver | grep -v grep && killall dnsproxyserver
 fi
