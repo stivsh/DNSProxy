@@ -5,6 +5,7 @@
 #include <fstream>
 #include <algorithm>
 #include <sstream>
+//TODO отдельные опции для клиентской стороны и отдельные для серверной, над названиями поработать
 class OptionReader{
     typedef std::map<std::string,unsigned int> int_optst;
     typedef std::map<std::string,std::string>  str_optst;

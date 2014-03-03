@@ -1,4 +1,8 @@
 #include "messidentconteiner.h"
+#include <cstdlib>
+#include <limits>
+#include <vector>
+
 MessIdentConteiner::MessIdentConteiner(){
     time(&last_check);
 }

@@ -25,3 +25,9 @@ HEADERS += \
     ../common/serverrunenvironment.h \
     ../common/watchdogtimer.h
 LIBS +=-lrt
+debug {
+  DEFINES += DEBUG_VERSION
+}
+release {
+  DEFINES += RELEASE_VERSION
+}

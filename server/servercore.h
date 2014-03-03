@@ -11,7 +11,8 @@
 #include <set>
 #include <cstdlib>
 #include <limits>
-#include "event_handlers/eventhandler.h"
+#include "../common/eventhandler.h"
+#include "../common/pool.h"
 #include "event_handlers/HandlerFactory.h"
 #include "../common/commondefines.h"
 #include "../common/watchdogtimer.h"
@@ -20,20 +21,19 @@ class ServerCore{
     volatile bool start;
     volatile bool restart;
     HandlerFactory hfact;
-    time_t last_time_check;
-    std::set<EventHandler*> handlers_to_delete;
+    Pool pool;
     void start_loop();
  public:
     static void external_command(ServerCommands command);
-    void delete_handler_next_itration(EventHandler* handler);
+    EventHandler* create_client_handler(int sd,struct sockaddr addr);
     static int start_server();
     static void CriticalError();
     static void DeleteServer();
     HandlerFactory& get_hfact();
     static ServerCore& Instance();
 private:
-        ServerCore(){}
-        ServerCore(const ServerCore& root){(void)&root;}
+        ServerCore():pool(hfact){}
+        ServerCore(const ServerCore& root):pool(hfact){(void)&root;}
         ServerCore& operator=(const ServerCore& s){(void)&s;return *this;}
 };
 #endif // SERVERCORE_H

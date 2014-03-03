@@ -13,6 +13,7 @@
 #include <sys/wait.h>
 #include "logger.h"
 #include "commondefines.h"
+
 void crit_sighandler(int sig, siginfo_t *info, void *context);
 template<class Server>
 void sighendler(int sig){

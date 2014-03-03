@@ -1,4 +1,10 @@
 #include "watchdogtimer.h"
+#include "logger.h"
+#include <unistd.h>
+#include <stdlib.h>
+#include <cstring>
+
+
 bool WatchDogTimer::sync_var=false;
 std::map<int,WDTInfo> WatchDogTimer::WDtimersInfo;
 int WatchDogTimer::nextid=1;
@@ -65,6 +71,9 @@ WatchDogTimer::~WatchDogTimer(){
     sync_var=false;
 }
 void WatchDogTimer::un_register_timer(){
+#ifdef DEBUG_VERSION
+    return ;
+#endif
     timer_registred=false;
     //отключаем таймер
     struct itimerspec ival;
@@ -73,6 +82,9 @@ void WatchDogTimer::un_register_timer(){
 
 }
 void WatchDogTimer::register_timer(){
+#ifdef DEBUG_VERSION
+    return ;
+#endif
     timer_registred=true;
     sigset_t mask;
     struct sigevent sigev;

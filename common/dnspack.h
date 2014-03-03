@@ -3,6 +3,7 @@
 #include <stdint-gcc.h>
 #include <netinet/in.h>
 #include <cstring>
+#include "../common/logger.h"
 #include "buffer.h"
 enum PARCER_RETURN{OK,NOT_ENOTH_DATA,WRONG_FORMAT,OVERFLOW};
 const char* PARCER_RETURN_AS_STR(PARCER_RETURN pr);
@@ -91,6 +92,9 @@ public:
             return OVERFLOW;
         }
         return OK;
+    }
+    DNSPack(){
+        Logger::message()<<"header size:"<<sizeof(DNSHeader)<<Logger::endl;
     }
 };
 

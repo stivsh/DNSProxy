@@ -1,6 +1,8 @@
 #include "NewConnectionHandler.h"
 #include "../servercore.h"
 #include "../../common/OptionReader.h"
+#include <fcntl.h>
+
 NewConnectionHandler::NewConnectionHandler(){
     int listener;
     struct sockaddr_in addr;
@@ -18,16 +20,16 @@ NewConnectionHandler::NewConnectionHandler(){
         ServerCore::CriticalError();
     }
     listen(listener, 5);
-    sd=listener;
+    handler.set_descriptor(listener);
 }
 
 void NewConnectionHandler::ready_read(){
     struct sockaddr addr;
     socklen_t addrlen=sizeof(addr);
-    int sock=accept(sd,&addr,&addrlen);
+    int sock=accept(handler.get_descriptor(),&addr,&addrlen);
     if(sock!=-1){
         fcntl(sock, F_SETFL, O_NONBLOCK);
-        ServerCore::Instance().get_hfact().create_client_handler(sock,addr);
+        ServerCore::Instance().create_client_handler(sock,addr);
     }else{
         Logger::error()<<"Can't handle new connection ERRNO:"<<errno<<addr<<Logger::endl;
     }
@@ -38,8 +40,12 @@ void NewConnectionHandler::exeption(){
     ServerCore::CriticalError();
 
 }
-void NewConnectionHandler::fill_fd_sets(fd_set *readset,fd_set *writeset,fd_set *exceptset){
-    (void)writeset;
-    FD_SET(sd, readset);
-    FD_SET(sd, exceptset);
+EventsToReact NewConnectionHandler::events_to_react(){
+    EventsToReact ev_react;
+    ev_react.readready=true;
+    ev_react.exeption=true;
+    return ev_react;
+}
+bool NewConnectionHandler::delete_this_handler(){
+    return false;
 }

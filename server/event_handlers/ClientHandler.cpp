@@ -1,19 +1,15 @@
 #include "ClientHandler.h"
 #include "../servercore.h"
 #include "../../common/OptionReader.h"
-ClientHandler::ClientHandler(int sd_,UDPServerHandler* _uservh,struct sockaddr addr_):
+ClientHandler::ClientHandler(int sd,UDPServerHandler* _uservh,struct sockaddr addr_):
     uservh(_uservh),addr(addr_){
-    sd=sd_;
+    handler.set_descriptor(sd);
     time(&last_reply_to_client);
     Logger::message()<<"New connection"<<addr<<Logger::endl;
-}
-struct sockaddr* ClientHandler::get_addr(){
-    return &addr;
 }
 void ClientHandler::drop_connection(){
     errorflag=true;
     Logger::debug()<<"Drop connection"<<addr<<Logger::endl;
-    ServerCore::Instance().delete_handler_next_itration(this);
 }
 
 void ClientHandler::send_request_to_server(){
@@ -40,7 +36,7 @@ void ClientHandler::send_request_to_server(){
 }
 void ClientHandler::ready_read(){
     if(errorflag)return;
-    int read_code = input_buf.recvsd(sd);
+    int read_code = input_buf.recvh(handler);
     if(read_code>0){
         Logger::debug()<<"receive data from client"<<addr<<Logger::endl;
         send_request_to_server();
@@ -54,7 +50,7 @@ void ClientHandler::ready_read(){
 
 void ClientHandler::send_reply_to_client(){
     if(output_buf.pos()){
-        int bytes_writen=output_buf.sendsd(sd);
+        int bytes_writen=output_buf.sendh(handler);
         if(bytes_writen>0){
             Logger::debug()<<"Send reply to client"<<addr<<Logger::endl;
             if(!output_buf.pos()){
@@ -96,9 +92,14 @@ void ClientHandler::time_out(){
     }
 
 }
-void ClientHandler::fill_fd_sets(fd_set *readset,fd_set *writeset,fd_set *exceptset){
-    FD_SET(sd, readset);
-    FD_SET(sd, exceptset);
+bool ClientHandler::delete_this_handler(){
+        return errorflag;
+}
+EventsToReact ClientHandler::events_to_react(){
+    EventsToReact ev_react;
+    ev_react.readready=true;
+    ev_react.exeption=true;
     if(output_buf.pos())
-        FD_SET(sd, writeset);
+        ev_react.writeready=true;
+    return ev_react;
 }

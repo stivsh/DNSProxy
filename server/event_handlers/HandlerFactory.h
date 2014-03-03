@@ -1,21 +1,23 @@
 #ifndef HANDLERFACTORY_H
 #define HANDLERFACTORY_H
-#include "eventhandler.h"
+
+#include "../common/eventhandler.h"
 #include "ClientHandler.h"
 #include "NewConnectionHandler.h"
 #include "UDPServerHandler.h"
-class HandlerFactory{
+#include "../common/AbstractEventHandlerFactory.h"
+#include <set>
+
+class HandlerFactory:public AbstractEventHandlerFactory{
     std::set<EventHandler*> handlers;
-    std::map<int,EventHandler*> skToHandler;
     UDPServerHandler* uservh;
     public:
     EventHandler* create_client_handler(int sd,struct sockaddr addr);
     EventHandler* create_listener_handler();
     EventHandler* create_udpserver_handler();
-    void remove_handler(EventHandler* hand);
-    std::set<EventHandler*>& get_handlers_set();
-    std::map<int,EventHandler*>& get_handler_map();
+    void delete_ev_handler(EventHandler* ev);
     void revoke_all_handlers();
+    bool is_valid_pointer(EventHandler* ev);
     ~HandlerFactory();
 };
 #endif // HANDLERFACTORY_H

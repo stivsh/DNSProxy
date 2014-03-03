@@ -18,17 +18,19 @@ SOURCES += main.cpp \
     event_handlers/HandlerFactory.cpp \
     event_handlers/NewConnectionHandler.cpp \
     event_handlers/UDPServerHandler.cpp \
-    event_handlers/eventhandler.cpp \
+    ../common/eventhandler.cpp \
     ../common/OptionReader.cpp \
     ../common/logger.cpp \
     ../common/serverrunenvironment.cpp \
     ../common/watchdogtimer.cpp \
     ../common/buffer.cpp \
-    ../common/dnspack.cpp
+    ../common/dnspack.cpp \
+    ../common/pool.cpp \
+    ../common/HANDLER.cpp
 
 HEADERS += \
     servercore.h \
-    event_handlers/eventhandler.h \
+    ../common/eventhandler.h \
     event_handlers/messidentconteiner.h \
     event_handlers/NewConnectionHandler.h \
     event_handlers/UDPServerHandler.h \
@@ -40,5 +42,15 @@ HEADERS += \
     ../common/serverrunenvironment.h \
     ../common/watchdogtimer.h \
     ../common/buffer.h \
-    ../common/dnspack.h
+    ../common/dnspack.h \
+    ../common/pool.h \
+    ../common/HANDLER.h \
+    ../common/eventstoreact.h \
+    ../common/AbstractEventHandlerFactory.h
 LIBS +=-lrt
+debug {
+  DEFINES += DEBUG_VERSION
+}
+release {
+  DEFINES += RELEASE_VERSION
+}

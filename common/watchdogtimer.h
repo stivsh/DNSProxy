@@ -1,13 +1,10 @@
 #ifndef WATCHDOGTIMER_H
 #define WATCHDOGTIMER_H
+
 #include <map>
 #include <time.h>
-#include <unistd.h>
-#include <time.h>
 #include <signal.h>
-#include <stdlib.h>
-#include <cstring>
-#include "logger.h"
+
 typedef void (*WatchDogTimerNotifyFunc)();
 void timer_handler(int signo, siginfo_t *info,void *context);
 class WDTInfo{
